@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: Content Moderation API
+  description: API for submitting content for moderation and retrieving status
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+
+paths:
+  /api/v1/content/submit:
+    post:
+      summary: Submit content for moderation
+      operationId: submit_content
+      tags:
+        - content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentSubmitRequest'
+      responses:
+        '202':
+          description: Content accepted for moderation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentSubmitResponse'
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too Many Requests - Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/content/{contentId}/status:
+    get:
+      summary: Get moderation status
+      operationId: get_content_status
+      tags:
+        - content
+      parameters:
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentStatusResponse'
+        '404':
+          description: Content not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      summary: Health check
+      operationId: health
+      responses:
+        '200':
+          description: Service health status
+
+components:
+  schemas:
+    ContentSubmitRequest:
+      type: object
+      required:
+        - text
+        - userId
+      properties:
+        text:
+          type: string
+          minLength: 1
+          description: Content text to moderate
+        userId:
+          type: string
+          minLength: 1
+          description: User identifier
+    ContentSubmitResponse:
+      type: object
+      required:
+        - contentId
+      properties:
+        contentId:
+          type: string
+          format: uuid
+          description: Unique content identifier
+    ContentStatusResponse:
+      type: object
+      required:
+        - contentId
+        - status
+      properties:
+        contentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PENDING
+            - APPROVED
+            - REJECTED
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Error message
